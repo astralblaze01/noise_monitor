@@ -89,7 +89,7 @@ class SolidNoiseMonitor:
             enabled=config.debug.plot_enabled,
             xlim=(10, 500),
             ylim=(0, 1),
-            ylabel="Amplitude (m/s^2)",
+            ylabel="Amplitude (dB)",
             title="Solid FFT Spectrum",
         )
 
@@ -126,7 +126,7 @@ class SolidNoiseMonitor:
         for violation in violations:
             self.notifier.notify(violation)
 
-        self.plotter.maybe_save(spectrum.freq_hz, spectrum.amplitude)
+        self.plotter.maybe_save(result.freq_hz, result.spectrum_dba)
 
     def _print_status(self, raw_frame: np.ndarray, sampling_elapsed: float, moment_dba: float, leq_dba: float, processing_elapsed: float) -> None:
         real_hz = self.config.solid.frame_size / sampling_elapsed if sampling_elapsed > 0 else 0.0
