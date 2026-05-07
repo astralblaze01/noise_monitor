@@ -19,11 +19,12 @@ class BaseAnalyzer:
         self._weight_cache: dict[tuple[int, float, float], np.ndarray] = {}
 
     def _valid_bins(self, freq_hz: np.ndarray, values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        # 0Hz와 Nyquist 끝 bin 제거. 기존 코드의 [1:-1] 의도를 명확히 함수화했다.
         freq = np.asarray(freq_hz, dtype=float)
         val = np.asarray(values, dtype=float)
+
         if freq.size <= 2:
             return freq, val
+
         return freq[1:-1], val[1:-1]
 
     def _a_weight(self, freq_hz: np.ndarray) -> np.ndarray:
@@ -42,11 +43,29 @@ class AirNoiseAnalyzer(BaseAnalyzer):
         self.int16_max = float(int16_max)
         self.spl_offset = float(spl_offset)
 
-    def analyze(self, freq_hz: np.ndarray, amplitude_fft: np.ndarray) -> AnalyzeResult:
-        db_spl = int16_fft_amplitude_to_spl_db(amplitude_fft, self.int16_max, self.spl_offset)
-        freq, db_spl = self._valid_bins(freq_hz, db_spl)
-        dba = db_spl + self._a_weight(freq)
-        return AnalyzeResult(moment_dba=sum_db(dba), spectrum_dba=dba, freq_hz=freq)
+    def analyze(self, freq_hz: np.ndarray, amplitude_acc: np.ndarray) -> AnalyzeResult:
+        # 1. 기존 acc_to_dB() 역할
+        acc_db = amplitude_to_db(
+        amplitude_acc,
+        reference=self.acc_reference,
+        cutoff=self.acc_cutoff,
+        )
+
+        # 2. 기존 solid_flow() 안의 [1:-1] 역할
+        freq, acc_db = self._valid_bins(freq_hz, acc_db)
+
+        # 3. 기존 mt.calc_spl(fft_result, freq) 역할
+        spl_db = self.acoustic_model.radiated_spl_from_solid(acc_db, freq)
+
+        # 4. 기존 get_weight_A + change_dB_to_dBA 역할
+        dba = spl_db + self._a_weight(freq)
+
+        # 5. 기존 sum_dB 역할
+        return AnalyzeResult(
+            moment_dba=sum_db(dba),
+            spectrum_dba=dba,
+            freq_hz=freq,
+        )
 
 
 class SolidNoiseAnalyzer(BaseAnalyzer):

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import numpy as np
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True)
 class Spectrum:
     freq_hz: np.ndarray
     amplitude: np.ndarray
@@ -17,47 +17,46 @@ class RfftProcessor:
     - 주파수축과 window를 매 프레임마다 새로 만들지 않고 초기화 시 1회만 계산
     - Hann window 사용 시 coherent gain으로 진폭 스케일 보정
     """
-
-    def __init__(self, frame_size: int, sample_rate_hz: int, use_hann_window: bool = True):
+    def __init__(self, frame_size: int, sample_rate_hz: int):
         self.frame_size = int(frame_size)
         self.sample_rate_hz = int(sample_rate_hz)
-        self.freq_hz = np.fft.rfftfreq(self.frame_size, d=1.0 / self.sample_rate_hz)
-
-        if use_hann_window:
-            self.window = np.hanning(self.frame_size).astype(np.float32)
-            self.coherent_gain = float(np.mean(self.window))
-        else:
-            self.window = None
-            self.coherent_gain = 1.0
+        self.freq_hz = np.fft.rfftfreq(
+            self.frame_size,
+            d=1.0 / self.sample_rate_hz,
+        )
 
     def transform(self, samples: np.ndarray) -> Spectrum:
-        samples_np = np.asarray(samples, dtype=np.float32)
-        if samples_np.size != self.frame_size:
-            raise ValueError(f"frame_size must be {self.frame_size}, got {samples_np.size}")
+        x = np.asarray(samples, dtype=np.float32)
 
-        if self.window is not None:
-            samples_np = samples_np * self.window
+        if x.size != self.frame_size:
+            x = x[: self.frame_size]
 
-        complex_fft = np.fft.rfft(samples_np)
-        amplitude = np.abs(complex_fft) * (2.0 / self.frame_size) / self.coherent_gain
+        complex_fft = np.fft.rfft(x)
+        amplitude = np.abs(complex_fft) * (2.0 / self.frame_size)
         amplitude[0] = 0.0
-        return Spectrum(freq_hz=self.freq_hz, amplitude=amplitude)
+
+        return Spectrum(
+            freq_hz=self.freq_hz,
+            amplitude=amplitude,
+        )
 
 
 class SolidPreprocessor:
-    """진동 센서 raw Z축 값을 EMA 영점 보정 후 m/s^2로 변환."""
-
     def __init__(self, initial_offset: float, offset_alpha: float, g_per_lsb: float, gravity: float):
-        self.offset = float(initial_offset)
+        self.current_offset = float(initial_offset)
         self.offset_alpha = float(offset_alpha)
         self.g_per_lsb = float(g_per_lsb)
         self.gravity = float(gravity)
 
-    def to_acceleration(self, raw_values: np.ndarray) -> np.ndarray:
-        raw_np = np.asarray(raw_values, dtype=np.float32)
-        block_mean = float(np.mean(raw_np))
-        self.offset = (1.0 - self.offset_alpha) * self.offset + self.offset_alpha * block_mean
-        return (raw_np - self.offset) * self.g_per_lsb * self.gravity
+    def to_acceleration(self, raw_frame: np.ndarray) -> np.ndarray:
+        buffer_np = np.asarray(raw_frame, dtype=np.float32)
+
+        self.current_offset = (
+            (1.0 - self.offset_alpha) * self.current_offset
+            + self.offset_alpha * np.mean(buffer_np)
+        )
+
+        return (buffer_np - self.current_offset) * self.g_per_lsb * self.gravity
 
 
 def amplitude_to_db(amplitude: np.ndarray, reference: float, cutoff: float | None = None) -> np.ndarray:
