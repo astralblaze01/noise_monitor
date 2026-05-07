@@ -1,0 +1,7 @@
+numpy
+pyserial
+sounddevice
+requests
+python-dotenv
+google-generativeai
+matplotlib
