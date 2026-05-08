@@ -21,7 +21,7 @@ class AcousticModel:
         source_db = np.asarray(source_db, dtype=float)
         freq = np.asarray(freq_hz, dtype=float)
         r = self.floor_thickness
-        return source_db - (self.alpha * np.sqrt(freq) * r) - 20.0 * np.log10(r)
+        return source_db - (self.alpha * np.sqrt(freq) * r) + 20.0 * np.log10(r)
 
     def radiated_spl_from_solid(self, source_db: np.ndarray, freq_hz: np.ndarray) -> np.ndarray:
         freq = np.asarray(freq_hz, dtype=float)

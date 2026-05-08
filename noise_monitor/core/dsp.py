@@ -81,7 +81,7 @@ def int16_fft_amplitude_to_spl_db(amplitude: np.ndarray, int16_max: float, spl_o
     """int16 PCM FFT 진폭을 간이 dB SPL로 변환.
 
     실제 절대 dB SPL은 마이크 캘리브레이션이 필요하다. 기존 코드의 offset 방식은 유지하되
-    로그 0 방지를 위해 -inf 대신 매우 작은 epsilon을 사용한다.
+    로그 0 방지를 위해 -inf 대신 매우 작은 epsilon을 사용한다. (소리는 진동과 달리 cutoff 기능 불필요)
     """
     amplitude_np = np.asarray(amplitude, dtype=float)
     dbfs = 20.0 * np.log10(np.maximum(amplitude_np, 1e-12) / float(int16_max))
