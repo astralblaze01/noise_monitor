@@ -19,13 +19,19 @@ class SpectrumPlotter:
     def __post_init__(self) -> None:
         self._counter = 0
 
-    def maybe_save(self, freq_hz: np.ndarray, values: np.ndarray) -> None:
-        if not self.enabled:
+    def maybe_save(self, freq_hz: np.ndarray, values: np.ndarray, force: bool = False) -> None:
+        # 기준치 초과(force) 시에는 무조건 저장 후보
+        should_save = force
+
+        # enabled(PLOT_ENABLED=1)일 때만 주기적(interval) 저장 로직 작동
+        if self.enabled and self.interval > 0:
+            self._counter += 1
+            if self._counter >= self.interval:
+                self._counter = 0
+                should_save = True
+
+        if not should_save:
             return
-        self._counter += 1
-        if self._counter < self.interval:
-            return
-        self._counter = 0
 
         import matplotlib.pyplot as plt
 

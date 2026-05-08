@@ -43,24 +43,20 @@ class AirNoiseAnalyzer(BaseAnalyzer):
         self.int16_max = float(int16_max)
         self.spl_offset = float(spl_offset)
 
-    def analyze(self, freq_hz: np.ndarray, amplitude_acc: np.ndarray) -> AnalyzeResult:
-        # 1. 기존 acc_to_dB() 역할
-        acc_db = amplitude_to_db(
-        amplitude_acc,
-        reference=self.acc_reference,
-        cutoff=self.acc_cutoff,
-        )
+    def analyze(self, freq_hz: np.ndarray, amplitude: np.ndarray) -> AnalyzeResult:
+        # 1. FFT 진폭 -> dB SPL 변환 (기존 sound_to_dB 역할)
+        spl_db = int16_fft_amplitude_to_spl_db(amplitude, self.int16_max, self.spl_offset)
 
-        # 2. 기존 solid_flow() 안의 [1:-1] 역할
-        freq, acc_db = self._valid_bins(freq_hz, acc_db)
+        # 2. 유효 주파수 대역 추출 [1:-1]
+        freq, spl_db = self._valid_bins(freq_hz, spl_db)
 
-        # 3. 기존 mt.calc_spl(fft_result, freq) 역할
-        spl_db = self.acoustic_model.radiated_spl_from_solid(acc_db, freq)
+        # 음향 감쇠식 로직 없음. sound_transmission_loss acoustic.py에 정의만 해놓고 안쓰고 있음.
+        # 개선필요.
 
-        # 4. 기존 get_weight_A + change_dB_to_dBA 역할
+        # 3. A-weighting 적용 (기존 change_dB_to_dBA 역할)
         dba = spl_db + self._a_weight(freq)
 
-        # 5. 기존 sum_dB 역할
+        # 4. 전체 에너지 합산 (dBA)
         return AnalyzeResult(
             moment_dba=sum_db(dba),
             spectrum_dba=dba,
@@ -80,4 +76,9 @@ class SolidNoiseAnalyzer(BaseAnalyzer):
         freq, acc_db = self._valid_bins(freq_hz, acc_db)
         spl_db = self.acoustic_model.radiated_spl_from_solid(acc_db, freq)
         dba = spl_db + self._a_weight(freq)
-        return AnalyzeResult(moment_dba=sum_db(dba), spectrum_dba=dba, freq_hz=freq)
+        return AnalyzeResult(
+            moment_dba=sum_db(dba),
+            spectrum_dba=dba,
+            spectrum_raw=acc_db, 
+            freq_hz=freq,
+        )

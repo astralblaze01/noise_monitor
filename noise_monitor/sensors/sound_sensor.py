@@ -59,14 +59,19 @@ class SoundNoiseMonitor:
             callback=self._callback,
         ):
             print("[sound] microphone stream started")
+            last_time = time.perf_counter()
             while True:
                 data = self.audio_queue.get()
+                now = time.perf_counter()
+                sampling_elapsed = now - last_time
+                last_time = now
+
                 audio = np.frombuffer(data, dtype=np.int16)
                 if audio.size != c.frame_size:
                     audio = audio[: c.frame_size]
-                self._process_frame(audio)
+                self._process_frame(audio, sampling_elapsed)
 
-    def _process_frame(self, audio: np.ndarray) -> None:
+    def _process_frame(self, audio: np.ndarray, sampling_elapsed: float) -> None:
         t0 = time.perf_counter()
         spectrum = self.fft.transform(audio)
         result = self.analyzer.analyze(spectrum.freq_hz, spectrum.amplitude)
@@ -81,11 +86,7 @@ class SoundNoiseMonitor:
             current_time=current_time,
         )
         
-        if self.config.debug.enabled:
-            print("-" * 50)
-            print(f"[sound] samples: {audio[:10].tolist()} ... size={audio.size}")
-            print(f"[sound] moment={result.moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA ({self.leq.size}/{self.leq.maxlen})")
-            print(f"[sound] processing={time.perf_counter() - t0:.4f}s")
+        self._print_status(audio, sampling_elapsed, result.moment_dba, leq_dba, time.perf_counter() - t0)
 
         violations = self.judge.check(measurement)
         if not violations:
@@ -95,4 +96,15 @@ class SoundNoiseMonitor:
         for violation in violations:
             self.notifier.notify(violation)
 
-        self.plotter.maybe_save(result.freq_hz, result.spectrum_dba)
+        self.plotter.maybe_save(result.freq_hz, result.spectrum_raw, force=bool(violations))
+
+    def _print_status(self, audio: np.ndarray, sampling_elapsed: float, moment_dba: float, leq_dba: float, processing_elapsed: float) -> None:
+        if self.config.debug.enabled:
+            print("-" * 50)
+            print(f"[sound] samples: {audio[:10].tolist()} ... size={audio.size}")
+            print(f"[sound] sampling: {sampling_elapsed:.4f}s")
+            print(f"[sound] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA ({self.leq.size}/{self.leq.maxlen})")
+            print(f"[sound] processing={processing_elapsed:.4f}s")
+        else:
+            # 디버그 모드가 아니더라도 핵심 수치와 처리 시간은 한 줄로 출력
+            print(f"[sound] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA, sampling={sampling_elapsed:.4f}s, processing={processing_elapsed:.4f}s")

@@ -34,7 +34,27 @@ class SolidSerialReader:
         time.sleep(2)
         self._serial.reset_input_buffer()
         print(f"[solid] opened serial port {self.port} at {self.baud_rate}bps")
+        
+        # 바이트 정렬 자동 맞춤 (Auto-Sync)
+        self._sync_alignment()
         return self
+
+    def _sync_alignment(self) -> None:
+        """첫 번째 샘플이 음수이면 바이트가 밀린 것으로 간주하고 교정합니다."""
+        if self._serial is None:
+            return
+
+        # 첫 2바이트(1개 샘플) 읽기
+        sample_bytes = self._serial.read(2)
+        if len(sample_bytes) < 2:
+            return
+        
+        val = struct.unpack("<h", sample_bytes)[0]
+        
+        # 센서가 위를 향하면 200~250 양수여야 함. 거대한 음수(-9000 등)는 바이트 밀림의 증거.
+        if val < 0:
+            print(f"[solid] alignment fixed: negative value {val} detected, skipping 1 byte")
+            self._serial.read(1)
 
     def __exit__(self, exc_type, exc, tb) -> None:
         if self._serial is not None:
@@ -89,7 +109,7 @@ class SolidNoiseMonitor:
             enabled=config.debug.plot_enabled,
             xlim=(10, 500),
             ylim=(0, 1),
-            ylabel="Amplitude (dB)",
+            ylabel="Amplitude (m/s^2)",
             title="Solid FFT Spectrum",
         )
 
@@ -126,7 +146,7 @@ class SolidNoiseMonitor:
         for violation in violations:
             self.notifier.notify(violation)
 
-        self.plotter.maybe_save(result.freq_hz, result.spectrum_dba)
+        self.plotter.maybe_save(result.freq_hz, spectrum.amplitude[1:-1], force=bool(violations))
 
     def _print_status(self, raw_frame: np.ndarray, sampling_elapsed: float, moment_dba: float, leq_dba: float, processing_elapsed: float) -> None:
         real_hz = self.config.solid.frame_size / sampling_elapsed if sampling_elapsed > 0 else 0.0
@@ -136,3 +156,6 @@ class SolidNoiseMonitor:
             print(f"[solid] sampling: {sampling_elapsed:.4f}s, real_hz={real_hz:.2f}Hz")
             print(f"[solid] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA ({self.leq.size}/{self.leq.maxlen})")
             print(f"[solid] processing={processing_elapsed:.4f}s")
+        else:
+            # 디버그 모드가 아니더라도 핵심 수치와 처리 시간은 한 줄로 출력
+            print(f"[solid] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA, sampling={sampling_elapsed:.4f}s, processing={processing_elapsed:.4f}s")
