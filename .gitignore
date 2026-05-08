@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+run_venv/
+
+# Logs and debug files
+logs/
+*.log
+*.png
+
+# OS
+.DS_Store
