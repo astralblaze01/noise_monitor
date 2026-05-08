@@ -137,10 +137,11 @@ class SolidNoiseMonitor:
             current_time=current_time,
         )
 
-        self._print_status(raw_frame, sampling_elapsed, result.moment_dba, leq_dba, time.perf_counter() - t0)
         violations = self.judge.check(measurement)
+        self._print_status(raw_frame, sampling_elapsed, result.moment_dba, leq_dba, time.perf_counter() - t0, violations)
+
         if not violations:
-            if not violations and self.config.debug.enabled:
+            if self.config.debug.enabled:
                 print("[solid] 소음 기준 초과 없음")
                 
         for violation in violations:
@@ -148,7 +149,7 @@ class SolidNoiseMonitor:
 
         self.plotter.maybe_save(result.freq_hz, spectrum.amplitude[1:-1], force=bool(violations))
 
-    def _print_status(self, raw_frame: np.ndarray, sampling_elapsed: float, moment_dba: float, leq_dba: float, processing_elapsed: float) -> None:
+    def _print_status(self, raw_frame: np.ndarray, sampling_elapsed: float, moment_dba: float, leq_dba: float, processing_elapsed: float, violations) -> None:
         real_hz = self.config.solid.frame_size / sampling_elapsed if sampling_elapsed > 0 else 0.0
         if self.config.debug.enabled:
             print("-" * 50)
@@ -157,5 +158,6 @@ class SolidNoiseMonitor:
             print(f"[solid] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA ({self.leq.size}/{self.leq.maxlen})")
             print(f"[solid] processing={processing_elapsed:.4f}s")
         else:
-            # 디버그 모드가 아니더라도 핵심 수치와 처리 시간은 한 줄로 출력
-            print(f"[solid] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA, sampling={sampling_elapsed:.4f}s, processing={processing_elapsed:.4f}s")
+            # 디버그 모드가 아니더라도 핵심 수치와 처리 시간은 한 줄로 출력 (기준치 초과시만)
+            if violations:
+                print(f"[solid] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA, sampling={sampling_elapsed:.4f}s, processing={processing_elapsed:.4f}s")

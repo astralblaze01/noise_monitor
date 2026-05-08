@@ -91,11 +91,11 @@ class SoundNoiseMonitor:
             current_time=current_time,
         )
         
-        self._print_status(audio, sampling_elapsed, result.moment_dba, leq_dba, time.perf_counter() - t0)
-
         violations = self.judge.check(measurement)
+        self._print_status(audio, sampling_elapsed, result.moment_dba, leq_dba, time.perf_counter() - t0, violations)
+        
         if not violations:
-            if not violations and self.config.debug.enabled:
+            if self.config.debug.enabled:
                 print("[sound] 소음 기준 초과 없음")
                 
         for violation in violations:
@@ -103,7 +103,7 @@ class SoundNoiseMonitor:
 
         self.plotter.maybe_save(result.freq_hz, spectrum.amplitude[1:-1], force=bool(violations))
 
-    def _print_status(self, audio: np.ndarray, sampling_elapsed: float, moment_dba: float, leq_dba: float, processing_elapsed: float) -> None:
+    def _print_status(self, audio: np.ndarray, sampling_elapsed: float, moment_dba: float, leq_dba: float, processing_elapsed: float, violations) -> None:
         if self.config.debug.enabled:
             print("-" * 50)
             print(f"[sound] samples: {audio[:10].tolist()} ... size={audio.size}")
@@ -111,5 +111,6 @@ class SoundNoiseMonitor:
             print(f"[sound] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA ({self.leq.size}/{self.leq.maxlen})")
             print(f"[sound] processing={processing_elapsed:.4f}s")
         else:
-            # 디버그 모드가 아니더라도 핵심 수치와 처리 시간은 한 줄로 출력
-            print(f"[sound] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA, sampling={sampling_elapsed:.4f}s, processing={processing_elapsed:.4f}s")
+            # 디버그 모드가 아니더라도 핵심 수치와 처리 시간은 한 줄로 출력 (기준치 초과시만)
+            if violations:
+                print(f"[sound] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA, sampling={sampling_elapsed:.4f}s, processing={processing_elapsed:.4f}s")
