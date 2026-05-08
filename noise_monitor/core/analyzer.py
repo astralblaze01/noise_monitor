@@ -38,8 +38,9 @@ class BaseAnalyzer:
 
 
 class AirNoiseAnalyzer(BaseAnalyzer):
-    def __init__(self, int16_max: float, spl_offset: float):
+    def __init__(self,acoustic_model: AcousticModel, int16_max: float, spl_offset: float):
         super().__init__()
+        self.acoustic_model = acoustic_model
         self.int16_max = float(int16_max)
         self.spl_offset = float(spl_offset)
 
@@ -50,13 +51,13 @@ class AirNoiseAnalyzer(BaseAnalyzer):
         # 2. 유효 주파수 대역 추출 [1:-1]
         freq, spl_db = self._valid_bins(freq_hz, spl_db)
 
-        # 음향 감쇠식 로직 없음. sound_transmission_loss acoustic.py에 정의만 해놓고 안쓰고 있음.
-        # 개선필요.
+        # 3. 기존 mt.calc_spl(fft_result, freq) 역할
+        spl_db -= self.acoustic_model.sound_transmission_loss(freq)
 
-        # 3. A-weighting 적용 (기존 change_dB_to_dBA 역할)
+        # 4. A-weighting 적용 (기존 change_dB_to_dBA 역할)
         dba = spl_db + self._a_weight(freq)
 
-        # 4. 전체 에너지 합산 (dBA)
+        # 5. 전체 에너지 합산 (dBA)
         return AnalyzeResult(
             moment_dba=sum_db(dba),
             spectrum_dba=dba,
@@ -79,6 +80,5 @@ class SolidNoiseAnalyzer(BaseAnalyzer):
         return AnalyzeResult(
             moment_dba=sum_db(dba),
             spectrum_dba=dba,
-            spectrum_raw=acc_db, 
             freq_hz=freq,
         )
