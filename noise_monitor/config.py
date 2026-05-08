@@ -66,7 +66,7 @@ class SolidSensorConfig:
     offset_alpha: float = _env_float("SOLID_OFFSET_ALPHA", 0.01)
     g_per_lsb: float = _env_float("SOLID_G_PER_LSB", 0.0039)
     gravity: float = _env_float("GRAVITY", 9.80665)
-    acc_cutoff: float = _env_float("SOLID_ACC_CUTOFF", 0.08)
+    acc_cutoff: float = _env_float("SOLID_ACC_CUTOFF", 0.05)
     acc_reference: float = _env_float("SOLID_ACC_REFERENCE", 1e-5)
     leq_window_size: int = _env_int("SOLID_LEQ_WINDOW_SIZE", 100)
 
@@ -86,7 +86,7 @@ class SoundSensorConfig:
 class DebugConfig:
     enabled: bool = os.getenv("DEBUG", "0") == "1"
     plot_enabled: bool = os.getenv("PLOT_ENABLED", "0") == "1"
-    solid_plot_interval: int = _env_int("SOLID_PLOT_INTERVAL", 10)
+    solid_plot_interval: int = _env_int("SOLID_PLOT_INTERVAL", 10) 
     sound_plot_interval: int = _env_int("SOUND_PLOT_INTERVAL", 100)
     solid_plot_path: str = _env_str("SOLID_PLOT_PATH", "fft_result_solid.png")
     sound_plot_path: str = _env_str("SOUND_PLOT_PATH", "fft_result_sound.png")
