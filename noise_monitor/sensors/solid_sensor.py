@@ -157,6 +157,8 @@ class SolidNoiseMonitor:
             print(f"[solid] sampling: {sampling_elapsed:.4f}s, real_hz={real_hz:.2f}Hz")
             print(f"[solid] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA ({self.leq.size}/{self.leq.maxlen})")
             print(f"[solid] processing={processing_elapsed:.4f}s")
+        elif self.config.debug.measure_log_enabled:
+            print(f"[solid] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA, sampling={sampling_elapsed:.4f}s, processing={processing_elapsed:.4f}s")
         else:
             # 디버그 모드가 아니더라도 핵심 수치와 처리 시간은 한 줄로 출력 (기준치 초과시만)
             if violations:

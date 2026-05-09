@@ -90,6 +90,7 @@ class DebugConfig:
     sound_plot_interval: int = _env_int("SOUND_PLOT_INTERVAL", 100)
     solid_plot_path: str = _env_str("SOLID_PLOT_PATH", "fft_result_solid.png")
     sound_plot_path: str = _env_str("SOUND_PLOT_PATH", "fft_result_sound.png")
+    measure_log_enabled: bool = os.getenv("MEASURE_LOG_ENABLED", "0") == "1"
 
 
 @dataclass(frozen=True)
