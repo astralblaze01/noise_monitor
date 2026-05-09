@@ -15,5 +15,8 @@ logs/
 *.log
 *.png
 
+# systemd
+*.service
+
 # OS
 .DS_Store
