@@ -79,6 +79,8 @@ class SoundSensorConfig:
     device: int | None = None if os.getenv("SOUND_DEVICE") in (None, "") else _env_int("SOUND_DEVICE", 0)
     int16_max: float = _env_float("SOUND_INT16_MAX", 32768.0)
     spl_offset: float = _env_float("SOUND_SPL_OFFSET", 100.0)
+    mic_distance: float = _env_float("SOUND_MIC_DISTANCE", 2.0) # 소음원과의 추정 거리 (m) - 라즈베리파이 마이크 수음 반경 고려
+    reference_distance: float = _env_float("SOUND_REFERENCE_DISTANCE", 0.1) # spl_offset 100dB의 기준 측정 거리 (m)
     leq_window_size: int = _env_int("SOUND_LEQ_WINDOW_SIZE", 13040)
 
 
