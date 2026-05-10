@@ -26,8 +26,10 @@ class SoundNoiseMonitor:
         self.analyzer = AirNoiseAnalyzer(
             AcousticModel(**config.acoustic.__dict__),
             c.int16_max, 
-            c.spl_offset
-            )
+            c.spl_offset,
+            c.mic_distance,
+            c.reference_distance
+        )
         self.leq = LeqCalculator(c.leq_window_size)
         self.period_resolver = PeriodResolver(config.time)
         self.judge = NoiseJudge(config.threshold)
@@ -110,7 +112,7 @@ class SoundNoiseMonitor:
             print(f"[sound] sampling: {sampling_elapsed:.4f}s")
             print(f"[sound] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA ({self.leq.size}/{self.leq.maxlen})")
             print(f"[sound] processing={processing_elapsed:.4f}s")
-        elif self.config.debug.measure_log_enabled:
+        elif self.config.debug.measure_log_enabled and moment_dba > 5:
             print(f"[sound] moment={moment_dba:.2f} dBA, Leq={leq_dba:.2f} dBA, sampling={sampling_elapsed:.4f}s, processing={processing_elapsed:.4f}s")
         else:
             # 디버그 모드가 아니더라도 핵심 수치와 처리 시간은 한 줄로 출력 (기준치 초과시만)
