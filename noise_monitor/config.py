@@ -46,8 +46,8 @@ class ThresholdConfig:
 
 @dataclass(frozen=True)
 class AcousticConfig:
-    mass_per_unit_area: float = _env_float("MASS_PER_UNIT_AREA", 2400.0 * 0.21)
-    floor_thickness: float = _env_float("FLOOR_THICKNESS", 0.21)
+    mass_per_unit_area: float = _env_float("MASS_PER_UNIT_AREA", 2400.0 * 0.10)
+    floor_thickness: float = _env_float("FLOOR_THICKNESS", 1.5)
     alpha: float = _env_float("ALPHA", 0.03)
     sigma: float = _env_float("SIGMA", 1.0)
     surface_area: float = _env_float("SURFACE_AREA", 10.0)
