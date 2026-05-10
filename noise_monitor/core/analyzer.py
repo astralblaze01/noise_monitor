@@ -38,11 +38,15 @@ class BaseAnalyzer:
 
 
 class AirNoiseAnalyzer(BaseAnalyzer):
-    def __init__(self,acoustic_model: AcousticModel, int16_max: float, spl_offset: float):
+    def __init__(self, acoustic_model: AcousticModel, int16_max: float, spl_offset: float, mic_distance: float = 1.0, reference_distance: float = 0.1):
         super().__init__()
         self.acoustic_model = acoustic_model
         self.int16_max = float(int16_max)
-        self.spl_offset = float(spl_offset)
+        
+        # 거리에 따른 음압 감소 보상 식 (역제곱 법칙)
+        # 거리가 reference_distance 보다 멀어질 경우, 줄어든 음압(dB)만큼 offset을 올려서 원래 소음원의 크기로 보정
+        distance_compensation = 20.0 * np.log10(max(mic_distance, reference_distance) / reference_distance)
+        self.spl_offset = float(spl_offset) + distance_compensation
 
     def analyze(self, freq_hz: np.ndarray, amplitude: np.ndarray) -> AnalyzeResult:
         # 1. FFT 진폭 -> dB SPL 변환 (기존 sound_to_dB 역할)
