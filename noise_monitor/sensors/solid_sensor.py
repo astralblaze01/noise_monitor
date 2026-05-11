@@ -12,7 +12,7 @@ from noise_monitor.core.acoustics import AcousticModel
 from noise_monitor.core.analyzer import SolidNoiseAnalyzer
 from noise_monitor.core.dsp import RfftProcessor, SolidPreprocessor
 from noise_monitor.core.leq import LeqCalculator
-from noise_monitor.core.types import NoiseMeasurement, NoiseType
+from noise_monitor.core.types import NoiseMeasurement, NoiseType, Period
 from noise_monitor.alert.rules import NoiseJudge, PeriodResolver
 from noise_monitor.alert.notifier import DiscordNotifier, AsyncNotifier
 from noise_monitor.utils.plotter import SpectrumPlotter
@@ -147,7 +147,10 @@ class SolidNoiseMonitor:
         for violation in violations:
             self.notifier.notify(violation)
 
-        self.plotter.maybe_save(result.freq_hz, spectrum.amplitude[1:-1], force=bool(violations))
+        # 순간 소음(moment)이 기준치를 넘을 때만 그래프 저장
+        t = self.config.threshold
+        lmax_threshold = t.daytime_solid_lmax if period == Period.DAY else t.nighttime_solid_lmax
+        self.plotter.maybe_save(result.freq_hz, spectrum.amplitude[1:-1], force=(result.moment_dba > lmax_threshold))
 
     def _print_status(self, raw_frame: np.ndarray, sampling_elapsed: float, moment_dba: float, leq_dba: float, processing_elapsed: float, violations) -> None:
         real_hz = self.config.solid.frame_size / sampling_elapsed if sampling_elapsed > 0 else 0.0
