@@ -66,7 +66,7 @@ class SolidSensorConfig:
     offset_alpha: float = _env_float("SOLID_OFFSET_ALPHA", 0.01)
     g_per_lsb: float = _env_float("SOLID_G_PER_LSB", 0.0039)
     gravity: float = _env_float("GRAVITY", 9.80665)
-    acc_cutoff: float = _env_float("SOLID_ACC_CUTOFF", 0.05)
+    acc_cutoff: float = _env_float("SOLID_ACC_CUTOFF", 0.1) #진동센서마다 다를 수 있으므로 solid fft 직후 max 진폭 그래프 보면서 조정 필요
     acc_reference: float = _env_float("SOLID_ACC_REFERENCE", 1e-5)
     leq_window_size: int = _env_int("SOLID_LEQ_WINDOW_SIZE", 100)
 
@@ -78,7 +78,7 @@ class SoundSensorConfig:
     channels: int = _env_int("SOUND_CHANNELS", 1)
     device: int | None = None if os.getenv("SOUND_DEVICE") in (None, "") else _env_int("SOUND_DEVICE", 0)
     int16_max: float = _env_float("SOUND_INT16_MAX", 32768.0)
-    spl_offset: float = _env_float("SOUND_SPL_OFFSET", 100.0)
+    spl_offset: float = _env_float("SOUND_SPL_OFFSET", 120.0) # 마이크마다 다르기 때문에 실제 휴대폰 앱 소음 측정값 참고하여 조정 필요
     mic_distance: float = _env_float("SOUND_MIC_DISTANCE", 2.0) # 소음원과의 추정 거리 (m) - 라즈베리파이 마이크 수음 반경 고려
     reference_distance: float = _env_float("SOUND_REFERENCE_DISTANCE", 0.1) # spl_offset 100dB의 기준 측정 거리 (m)
     leq_window_size: int = _env_int("SOUND_LEQ_WINDOW_SIZE", 13040)
