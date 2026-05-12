@@ -37,7 +37,9 @@ class TimeConfig:
 @dataclass(frozen=True)
 class ThresholdConfig:
     daytime_air_leq: float = _env_float("DAYTIME_AIR_LEQ", 45.0)
+    #daytime_air_lmax: float = _env_float("DAYTIME_AIR_LMAX", 55.0)
     nighttime_air_leq: float = _env_float("NIGHTTIME_AIR_LEQ", 40.0)
+    #nighttime_air_lmax: float = _env_float("NIGHTTIME_AIR_LMAX", 50.0)
     daytime_solid_lmax: float = _env_float("DAYTIME_SOLID_LMAX", 57.0)
     daytime_solid_leq: float = _env_float("DAYTIME_SOLID_LEQ", 43.0)
     nighttime_solid_lmax: float = _env_float("NIGHTTIME_SOLID_LMAX", 52.0)
@@ -99,7 +101,7 @@ class DebugConfig:
 class AlertConfig:
     discord_webhook_url: str | None = os.getenv("DISCORD_WEBHOOK_URL")
     gemini_api_key: str | None = os.getenv("GEMINI_API_KEY")
-    cooldown_sec: int = _env_int("ALERT_COOLDOWN_SEC", 600) # 10분 간격으로 알람 보내기(기준치 초과할경우)
+    cooldown_sec: int = _env_int("ALERT_COOLDOWN_SEC", 300) # 5분 간격으로 알람 보내기(기준치 초과할경우)
     gemini_model_name: str = _env_str("GEMINI_MODEL_NAME", "gemini-2.5-flash")
     use_ai_message: bool = os.getenv("USE_AI_MESSAGE", "1") == "1"
 

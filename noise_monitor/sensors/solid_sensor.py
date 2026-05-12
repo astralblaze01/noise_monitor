@@ -108,7 +108,7 @@ class SolidNoiseMonitor:
             interval=config.debug.solid_plot_interval,
             enabled=config.debug.plot_enabled,
             xlim=(10, 500),
-            ylim=(0, 1),
+            ylim=(0, 0.5),
             ylabel="Amplitude (m/s^2)",
             title="Solid FFT Spectrum",
         )

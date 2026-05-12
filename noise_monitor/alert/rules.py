@@ -27,9 +27,15 @@ class NoiseJudge:
         t = self.thresholds
 
         if measurement.noise_type == NoiseType.AIR:
-            threshold = t.daytime_air_leq if measurement.period == Period.DAY else t.nighttime_air_leq
-            if measurement.leq_dba > threshold:
-                violations.append(self._violation(measurement, MeasureType.LEQ, measurement.leq_dba, threshold))
+            leq_threshold = t.daytime_air_leq if measurement.period == Period.DAY else t.nighttime_air_leq
+            # lmax_threshold = t.daytime_air_lmax if measurement.period == Period.DAY else t.nighttime_air_lmax
+
+            # # 순간 소음(moment)이 Lmax 기준치를 넘으면 알람
+            # if measurement.moment_dba > lmax_threshold:
+            #     violations.append(self._violation(measurement, MeasureType.MOMENT, measurement.moment_dba, lmax_threshold))
+            # Leq 평균이 기준치를 넘으면 알람
+            if measurement.leq_dba > leq_threshold:
+                violations.append(self._violation(measurement, MeasureType.LEQ, measurement.leq_dba, leq_threshold))
             return violations
 
         if measurement.period == Period.DAY:
