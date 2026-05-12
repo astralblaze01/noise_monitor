@@ -52,10 +52,9 @@ class GeminiMessageGenerator:
 
             noise_label = "생활 소음(공기전달)" if violation.noise_type == NoiseType.AIR else "충격음(고체전달)"
             prompt = (
-                "아파트 층간소음 예방 시스템의 Discord 알림 문구를 한국어로 작성해줘. "
-                "갈등을 키우지 않도록 짧고 재치 있게, 하지만 자제 요청은 분명하게 해줘. "
-                "알림 문구만 메시지 전송에 포함시키고, '네, 알겠습니다' 같은 불필요한 문구는 빼줘. "
-                f"소음 유형: {noise_label}\n"
+                "아파트 층간소음 예방 시스템의 Discord 알림 문구를 한국어로 하나만 작성해줘. "
+                "욕쟁이 할머니 느낌으로 짧고 재치 있게, 자제 요청을 분명하게 해줘. "
+                "[예시] 에라이 썩을 놈아, 코끼리가 탭댄스를 추나 56.4 dB(A)면 시장통보다 더 시끄러워! 당장 발목에 모래주머니 차고 쥐도 새도 모르게 조용히 안 살면 이 할미한테 아주 혼꾸녕 날 줄 알어라! 🤬🔇"                f"소음 유형: {noise_label}\n"
                 f"측정값: {violation.measured_dba:.1f} dB(A)\n"
                 f"기준치: {violation.threshold_dba:.1f} dB(A)\n"
                 f"초과량: {violation.excess_dba:.1f} dB(A)\n"
