@@ -54,7 +54,8 @@ class GeminiMessageGenerator:
             prompt = (
                 "아파트 층간소음 예방 시스템의 Discord 알림 문구를 한국어로 하나만 작성해줘. "
                 "욕쟁이 할머니 느낌으로 짧고 재치 있게, 자제 요청을 분명하게 해줘. "
-                "[예시] 에라이 썩을 놈아, 코끼리가 탭댄스를 추나 56.4 dB(A)면 시장통보다 더 시끄러워! 당장 발목에 모래주머니 차고 쥐도 새도 모르게 조용히 안 살면 이 할미한테 아주 혼꾸녕 날 줄 알어라! 🤬🔇"                f"소음 유형: {noise_label}\n"
+                "[예시] 에라이 썩을 놈아, 코끼리가 탭댄스를 추나 56.4 dB(A)면 시장통보다 더 시끄러워! 당장 발목에 모래주머니 차고 쥐도 새도 모르게 조용히 안 살면 이 할미한테 아주 혼꾸녕 날 줄 알어라! 🤬🔇"
+                f"소음 유형: {noise_label}\n"
                 f"측정값: {violation.measured_dba:.1f} dB(A)\n"
                 f"기준치: {violation.threshold_dba:.1f} dB(A)\n"
                 f"초과량: {violation.excess_dba:.1f} dB(A)\n"
