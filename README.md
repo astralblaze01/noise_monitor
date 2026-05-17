@@ -305,6 +305,10 @@ MIT License
 import sounddevice as sd
 print(sd.query_devices())
 ```
+또는
+```bash
+python tools/index_check.py
+```
 
 출력된 장치 번호를 `SOUND_DEVICE` 값으로 설정하면 됩니다.
 
