@@ -1,168 +1,307 @@
-# 🏢 층간소음 예방 알림 시스템
+# 층간소음 예방 알림 시스템 (noise_monitor)
 
-층간소음을 감지하고 분석하여 기준치 초과 시 알림을 보내는 스마트 모니터링 시스템입니다.
+층간소음을 실시간으로 감지하고 분석하여 기준치 초과 시 Discord 알림을 전송하는 스마트 소음 모니터링 시스템입니다.
 
-## 🚀 실행 방법
+마이크 기반 공기전달 소음과 진동 센서 기반 고체전달 충격음을 모두 지원하며, FFT 분석 / dBA 계산 / Leq 계산 / AI 기반 알림 메시지 생성 기능을 포함합니다.
 
-```bash
-python main.py air      # 공기전달 소음 마이크 측정
-python main.py solid    # 고체전달 충격음 시리얼 센서 측정
-python main.py both     # 두 센서 동시 실행
-```
+---
 
-## 📁 폴더 구조 및 역할
+# 주요 기능
+
+- 공기전달 소음 측정 (마이크 입력)
+- 고체전달 충격음 측정 (시리얼 진동 센서 입력)
+- FFT 기반 주파수 분석
+- dB / dBA 계산
+- 등가소음도(Leq) 계산
+- 주야간 기준치 자동 판단
+- Discord Webhook 알림 전송
+- Gemini AI 기반 자연어 알림 메시지 생성
+- 알림 중복 방지 및 쿨다운 시스템
+- 로그 저장 및 FFT 그래프 저장
+- air / solid / both 모드 지원
+
+---
+
+# 시스템 구조
 
 ```text
-noise_monitor_refactor/
+noise_monitor/
 │
-├── main.py               # 프로그램 시작점
-├── .env                  # 환경변수 설정 파일
+├── main.py
+├── requirements.txt
+├── setup.sh
+├── .env
 │
 ├── noise_monitor/
-│   ├── config.py         # 모든 설정값 관리
-│   ├── processer.py      # air / solid / both 실행 제어
+│   ├── config.py
+│   ├── processer.py
 │   │
 │   ├── sensors/
-│   │   ├── sound_sensor.py # 마이크 입력 처리
-│   │   └── solid_sensor.py # 진동센서 시리얼 입력 처리
+│   │   ├── sound_sensor.py
+│   │   └── solid_sensor.py
 │   │
 │   ├── core/
-│   │   ├── dsp.py        # FFT 처리
-│   │   ├── analyzer.py   # dB, dBA, 순간소음도 계산
-│   │   ├── leq.py        # 등가소음도 Leq 계산
-│   │   └── types.py      # NoiseMeasurement, ThresholdViolation 등 데이터 타입
+│   │   ├── dsp.py
+│   │   ├── analyzer.py
+│   │   ├── leq.py
+│   │   └── types.py
 │   │
 │   ├── alert/
-│   │   ├── rules.py      # 주야간 판단, 기준치 초과 판단
-│   │   └── notifier.py   # Discord / Gemini / 비동기 알림 처리
+│   │   ├── rules.py
+│   │   └── notifier.py
 │   │
 │   └── utils/
-│       └── plotter.py    # FFT 그래프 저장
+│       └── plotter.py
 │
 └── logs/
     ├── air/
     └── solid/
 ```
 
-## ⚙️ 환경변수 설정 (.env)
+---
+
+# 동작 방식
+
+## 공기전달 소음 처리
+
+```text
+마이크 입력
+ → RawInputStream
+ → FFT 변환
+ → dB 변환
+ → A-weighting 적용
+ → 순간 dBA 계산
+ → Leq 계산
+ → 기준 초과 판단
+ → Discord 알림
+```
+
+## 고체전달 충격음 처리
+
+```text
+시리얼 센서 입력
+ → frame buffer 누적
+ → FFT 변환
+ → 진동 분석
+ → dBA 계산
+ → Leq 계산
+ → 기준 초과 판단
+ → Discord 알림
+```
+
+---
+
+# 설치 방법
+
+## 1. 저장소 클론
 
 ```bash
-export DISCORD_WEBHOOK_URL="..."
-export GEMINI_API_KEY="..."
-export SOUND_DEVICE=0
-export PLOT_ENABLED=1
+git clone https://github.com/astralblaze01/noise_monitor.git
+cd noise_monitor
 ```
 
-## 🌊 전체 시스템 동작 Flow
+---
 
-```mermaid
-graph TD
-    A[실행: python main.py] --> B[설정 로드: .env & config.py]
-    B --> C[센서 시작: Mic / Serial]
-    C --> D[프레임 수집: 1024 samples]
-    D --> E[FFT 분석: freq_hz, amplitude]
-    E --> F[분석: dB 변환 → A-weighting → dBA 합산]
-    F --> G[측정값 생성: moment_dBA, Leq_dBA]
-    G --> H[시간대 판단: DAY / NIGHT]
-    H --> I{기준 비교}
-    I -->|기준 이하| J[로그만 저장]
-    I -->|기준 초과| K[AsyncNotifier 큐잉]
-    K --> L{쿨다운 확인}
-    L -->|쿨다운 중| M[알림 생략]
-    L -->|쿨다운 종료| N[Gemini 문구 생성]
-    N --> O[Discord Webhook 전송]
+## 2. Python 가상환경 생성
+
+```bash
+python -m venv .venv
 ```
 
-<br>
+### Linux / macOS
 
-## 🔍 상세 동작 Flow (클릭해서 펼치기)
+```bash
+source .venv/bin/activate
+```
 
-<details>
-<summary><b>🌬️ 공기 / 🧱 고체 전달 소음 동작 Flow</b></summary>
-<br>
+### Windows
 
-**[공기 전달 소음]**
+```powershell
+.venv\Scripts\activate
+```
+
+---
+
+## 3. 패키지 설치
+
+```bash
+pip install -r requirements.txt
+```
+
+또는:
+
+```bash
+bash setup.sh
+```
+
+---
+
+# 환경 변수 설정
+
+`.env` 파일을 생성하고 아래 값을 설정합니다.
+
+```env
+# Discord
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+
+# Gemini
+GEMINI_API_KEY=YOUR_API_KEY
+
+# 오디오 입력 장치 번호
+SOUND_DEVICE=0
+
+# FFT 그래프 저장 여부
+PLOT_ENABLED=1
+
+# AI 메시지 사용 여부
+USE_AI_MESSAGE=1
+```
+
+---
+
+# 실행 방법
+
+## 공기전달 소음 측정
+
+```bash
+python main.py air
+```
+
+마이크를 사용하여 공기전달 소음을 측정합니다.
+
+---
+
+## 고체전달 충격음 측정
+
+```bash
+python main.py solid
+```
+
+시리얼 기반 진동 센서를 사용하여 충격음을 측정합니다.
+
+---
+
+## 두 센서 동시에 실행
+
+```bash
+python main.py both
+```
+
+공기전달 소음과 고체전달 충격음을 동시에 분석합니다.
+
+---
+
+# 로그 저장
+
+로그는 날짜별로 자동 저장됩니다.
+
 ```text
-SoundNoiseMonitor.run_forever()
- ├── sounddevice RawInputStream 시작
- ├── 마이크 callback 실행
- ├── audio_queue에 raw audio 저장
- ├── 메인 루프에서 audio_queue.get()
- ├── int16 audio numpy 배열 변환
- ├── RfftProcessor.transform()
- ├── AirNoiseAnalyzer.analyze()
- ├── moment_dBA 계산
- ├── LeqCalculator.push(moment_dBA)
- ├── NoiseMeasurement 생성
- └── NoiseJudge.check() ── (기준 초과 시 AsyncNotifier.notify)
+logs/
+├── air/
+└── solid/
 ```
 
-**[고체 전달 충격음]**
+콘솔 출력과 파일 저장이 동시에 수행됩니다.
+
+---
+
+# Discord 알림 시스템
+
+기준치를 초과하면 Discord Webhook으로 자동 알림이 전송됩니다.
+
+기능:
+
+- 중복 알림 방지
+- 쿨다운 기반 재전송 제한
+- AI 기반 자연어 메시지 생성
+- 비동기 알림 처리
+
+예시:
+
 ```text
-SolidNoiseMonitor.run_forever()
- ├── serial.Serial 연결
- ├── 128 byte 단위로 raw 데이터 읽기
- ├── struct.unpack으로 short 값 변환
- ├── 1024개 frame_size만큼 버퍼 누적
- ├── EMA 방식으로 offset 보정
- ├── 가속도 단위 m/s² 변환
- ├── RfftProcessor.transform()
- ├── SolidNoiseAnalyzer.analyze()
- ├── moment_dBA 계산
- ├── LeqCalculator.push(moment_dBA)
- ├── NoiseMeasurement 생성
- └── NoiseJudge.check() ── (초과 시 AsyncNotifier.notify)
+⚠️ 야간 층간소음 기준 초과
+현재 소음도: 48.2 dBA
+Leq: 44.7 dBA
 ```
-</details>
 
-<details>
-<summary><b>🔔 알림 처리 및 쿨다운 Flow</b></summary>
-<br>
+---
 
-**[알림 처리]**
+# FFT 및 dBA 분석
+
+시스템은 다음 과정을 통해 소음을 분석합니다.
+
 ```text
-기준 초과 발생 → ThresholdViolation 생성
- └── AsyncNotifier.notify()
-      ├── (중복) 대기 중이면 무시
-      └── (신규) queue에 넣음
-           └── background alert-worker thread
-                └── DiscordNotifier.notify()
-                     ├── 쿨다운 중이면 전송 안 함
-                     └── 쿨다운 지났으면 진행
-                          ├── USE_AI_MESSAGE=1 이면 Gemini 호출
-                          └── USE_AI_MESSAGE=0 이면 기본 문구 사용
-                               └── Discord webhook 전송
+raw signal
+ → np.fft.rfft()
+ → amplitude 계산
+ → dB 변환
+ → A-weighting 적용
+ → dBA 계산
+ → Leq 계산
 ```
 
-**[알림 쿨다운]**
-```text
-알림 전송 성공 → 현재 시간 저장 → 10분 동안 같은 종류 알림 생략 → 10분 이후 다시 알림 재전송 가능
-```
-</details>
+---
 
-<details>
-<summary><b>🧮 데이터 계산 및 로그 처리 Flow</b></summary>
-<br>
+# 주요 모듈 설명
 
-**[FFT (고속 푸리에 변환)]**
-```text
-raw signal → np.fft.rfft() → 주파수 배열 freq_hz 생성 → 진폭 amplitude 계산 → 0Hz 성분 제거
+| 모듈 | 역할 |
+|---|---|
+| `dsp.py` | FFT 처리 |
+| `analyzer.py` | dB / dBA 계산 |
+| `leq.py` | 등가소음도 계산 |
+| `rules.py` | 기준치 초과 판단 |
+| `notifier.py` | Discord / Gemini 알림 |
+| `sound_sensor.py` | 마이크 입력 처리 |
+| `solid_sensor.py` | 진동 센서 처리 |
+| `plotter.py` | FFT 그래프 저장 |
+
+---
+
+# 지원 환경
+
+- Python 3.10+
+- Linux
+- Raspberry Pi
+- Windows (일부 오디오 장치 설정 필요)
+
+---
+
+# 사용 기술
+
+- Python
+- NumPy
+- SciPy
+- sounddevice
+- pyserial
+- Discord Webhook
+- Google Gemini API
+
+---
+
+# 향후 개선 예정
+
+- 웹 대시보드
+- 실시간 그래프 UI
+- DB 기반 통계 저장
+- 모바일 알림 연동
+- 머신러닝 기반 소음 분류
+
+---
+
+# 라이선스
+
+MIT License
+
+---
+
+# 참고
+
+오디오 입력 장치 확인:
+
+```python
+import sounddevice as sd
+print(sd.query_devices())
 ```
 
-**[dB / dBA 계산]**
-```text
-FFT amplitude → dB 변환 → A-weighting 적용 → 주파수별 dBA 배열 → 에너지 합산 → 순간 dBA(moment)
-```
+출력된 장치 번호를 `SOUND_DEVICE` 값으로 설정하면 됩니다.
 
-**[등가소음도(Leq) 계산]**
-```text
-moment_dBA → 10^(dBA/10) 에너지 변환 → 최근 N개 에너지 누적 → 평균 에너지 계산 → 10 * log10(mean_energy) → Leq_dBA
-```
-
-**[로그 저장]**
-```text
-print() 발생 → TimestampTee
- ├── 콘솔 출력
- └── 파일 저장 → DailyLogFile → 날짜/요일별 로그 파일 생성
-```
-</details>
