@@ -69,6 +69,7 @@ noise_monitor/
  → RawInputStream
  → FFT 변환
  → dB 변환
+ → 감쇠식 계산
  → A-weighting 적용
  → 순간 dBA 계산
  → Leq 계산
@@ -83,6 +84,7 @@ noise_monitor/
  → frame buffer 누적
  → FFT 변환
  → 진동 분석
+ → 감쇠식 계산
  → dBA 계산
  → Leq 계산
  → 기준 초과 판단
@@ -235,6 +237,7 @@ raw signal
  → np.fft.rfft()
  → amplitude 계산
  → dB 변환
+ → 감쇠식 계산
  → A-weighting 적용
  → dBA 계산
  → Leq 계산
