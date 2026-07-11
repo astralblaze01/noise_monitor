@@ -61,6 +61,11 @@ class SolidSerialReader:
             self._serial.close()
             print("[solid] serial port closed")
 
+    def _is_frame_valid(self, frame: np.ndarray) -> bool:
+        """프레임의 중앙값이 정상 범위(50~500) 안에 있는지 검사합니다."""
+        median_val = int(np.median(frame))
+        return 50 <= median_val <= 500
+
     def frames(self) -> Iterator[np.ndarray]:
         if self._serial is None:
             raise RuntimeError("SolidSerialReader must be used as a context manager")
@@ -73,6 +78,15 @@ class SolidSerialReader:
             if len(buffer) >= self.frame_size:
                 frame = np.asarray(buffer[: self.frame_size], dtype=np.int16)
                 del buffer[: self.frame_size]
+
+                if not self._is_frame_valid(frame):
+                    median_val = int(np.median(frame))
+                    print(f"[solid] misaligned frame detected (median={median_val}), flushing and re-syncing")
+                    buffer.clear()
+                    self._serial.reset_input_buffer()
+                    self._sync_alignment()
+                    continue
+
                 yield frame
 
     def _read_exact(self, size: int) -> bytes:
